@@ -1,7 +1,7 @@
 from django.urls import path
 
 from server.api.views import RecipiesApiView, RecipieApiView, recipie_list, recipie_details, ListRecipiesAV, \
-    DetailsRecipieAV
+    DetailsRecipieAV, RecipieCategoryApiView
 
 urlpatterns = [
     path('recipies/test/', recipie_list, name='recipies list test'),
@@ -10,4 +10,5 @@ urlpatterns = [
     path('recipies/test2/<int:pk>/', DetailsRecipieAV.as_view(), name='recipies details test2'),
     path('recipies/', RecipiesApiView.as_view(), name='recipies list'),
     path('recipies/<int:pk>/', RecipieApiView.as_view(), name='recipie details'),
+    path('recipies/<str:category>/', RecipieCategoryApiView.as_view(), name='recipie by category'),
 ]

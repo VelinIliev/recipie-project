@@ -99,3 +99,11 @@ class RecipieApiView(rest_views.RetrieveAPIView, rest_views.UpdateAPIView, rest_
     queryset = Recipie.objects.all()
 
 
+class RecipieCategoryApiView(rest_views.ListAPIView):
+    serializer_class = RecipiesSerializer
+    lookup_url_kwarg = 'category'
+
+    def get_queryset(self):
+        category = self.kwargs.get(self.lookup_url_kwarg).title()
+        queryset = Recipie.objects.filter(category__name=category)
+        return queryset
