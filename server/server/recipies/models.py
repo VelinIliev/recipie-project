@@ -8,13 +8,6 @@ class Category(models.Model):
         return self.name
 
 
-class Photo(models.Model):
-    imageUrl = models.URLField()
-
-    def __str__(self):
-        return self.imageUrl
-
-
 class Recipie(models.Model):
     title = models.CharField(
         max_length=150,
@@ -48,22 +41,27 @@ class Recipie(models.Model):
     _created_at = models.DateTimeField(
         auto_now_add=True
     )
+    _updated_at = models.DateTimeField(
+        auto_now=True
+    )
+    rating = models.DecimalField(
+        max_digits=2,
+        decimal_places=1,
+        default=0
+    )
+
     category = models.ManyToManyField(Category)
 
     def __str__(self):
         return self.title
 
 
-class RecipieImage(models.Model):
+class Photo(models.Model):
+    imageUrl = models.URLField()
     recipie = models.ForeignKey(
-        Recipie,
-        on_delete=models.CASCADE,
-        related_name='images'
-    )
-    image = models.ForeignKey(
-        Photo,
+        to=Recipie,
         on_delete=models.CASCADE
     )
 
     def __str__(self):
-        return f"Image for {self.recipie.title}"
+        return self.imageUrl

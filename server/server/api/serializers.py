@@ -1,23 +1,22 @@
 from rest_framework import serializers
 
-from server.recipies.models import Recipie, Category, Photo, RecipieImage
+from server.recipies.models import Recipie, Category, Photo
 
 
 def description_validator(value):
     if len(value) < 2:
         raise serializers.ValidationError('Description is too short')
 
+class PhotoSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    imageUrl = serializers.CharField()
+    # recipie = serializers.CharField()
+
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ('name',)
-
-
-class PhotoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RecipieImage
-        fields = '__all__'
 
 
 class RecipiesSerializer(serializers.ModelSerializer):
@@ -40,16 +39,12 @@ class RecipieSerializer(serializers.ModelSerializer):
     def get_total_time(self, object):
         total = (int(object.preparation_time) if object.preparation_time else 0) \
                 + (int(object.cooking_time if object.cooking_time else 0))
-
         return total
 
     def get_photos(self, object):
-        photos = []
-        recipe = Recipie.objects.filter(pk=object.pk).get()
-        recipe_images = recipe.images.all()
-        for image in recipe_images:
-            photos.append(Photo.objects.filter(pk=image.image_id).get().imageUrl)
-        return photos
+        photos = object.photo_set.all()
+        serializer = PhotoSerializer(photos, many=True)
+        return serializer.data
 
     def validate(self, data):
         if data['title'] == data['description']:

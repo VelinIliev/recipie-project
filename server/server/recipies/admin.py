@@ -1,11 +1,11 @@
 from django.contrib import admin
 
-from server.recipies.models import Recipie, Category, Photo, RecipieImage
+from server.recipies.models import Recipie, Category, Photo
 
 
 @admin.register(Recipie)
 class RecipieAdmin(admin.ModelAdmin):
-    list_display = ['title']
+    list_display = ['id', 'title']
 
 
 @admin.register(Category)
@@ -17,6 +17,6 @@ class CategoryAdmin(admin.ModelAdmin):
 class PhotoAdmin(admin.ModelAdmin):
     ...
 
-@admin.register(RecipieImage)
-class RecipieImageAdmin(admin.ModelAdmin):
-    ...
+# @admin.register(RecipieImage)
+# class RecipieImageAdmin(admin.ModelAdmin):
+#     ...
