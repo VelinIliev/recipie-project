@@ -85,8 +85,19 @@ class DetailsRecipieAV(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class RecipiesApiView(rest_views.ListAPIView):
+class RecipiesApiView(rest_views.ListAPIView, rest_views.CreateAPIView):
     serializer_class = RecipiesSerializer
+
+    def get(self, request, *args, **kwargs):
+        self.serializer_class = RecipiesSerializer
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        serializer = RecipieSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return self.list(request, *args, **kwargs)
 
     def get_queryset(self):
         queryset = Recipie.objects.all()

@@ -1,3 +1,4 @@
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
 
@@ -44,11 +45,6 @@ class Recipie(models.Model):
     _updated_at = models.DateTimeField(
         auto_now=True
     )
-    rating = models.DecimalField(
-        max_digits=2,
-        decimal_places=1,
-        default=0
-    )
 
     category = models.ManyToManyField(Category)
 
@@ -65,3 +61,20 @@ class Photo(models.Model):
 
     def __str__(self):
         return self.imageUrl
+
+
+class Review(models.Model):
+    rating = models.PositiveIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+    description = models.CharField(
+        max_length=250,
+        null=True
+    )
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    active = models.BooleanField(default=True)
+    recipie = models.ForeignKey(Recipie, on_delete=models.CASCADE, related_name='reviews')
+
+    def __str__(self):
+        return f'{self.rating} - {self.description} - {self.recipie}'

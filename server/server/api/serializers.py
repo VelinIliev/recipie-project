@@ -1,11 +1,13 @@
+from django.urls import reverse
 from rest_framework import serializers
 
-from server.recipies.models import Recipie, Category, Photo
+from server.recipies.models import Recipie, Category, Photo, Review
 
 
 def description_validator(value):
     if len(value) < 2:
         raise serializers.ValidationError('Description is too short')
+
 
 class PhotoSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
@@ -19,18 +21,36 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ('name',)
 
 
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = '__all__'
+
+
 class RecipiesSerializer(serializers.ModelSerializer):
-    category = CategorySerializer(many=True, read_only=True)
+    categories = CategorySerializer(many=True, read_only=True)
+    link = serializers.SerializerMethodField()
 
     class Meta:
         model = Recipie
-        fields = ('id', 'title', 'description', 'category')
+        fields = ('id', 'title', 'description', 'categories', 'link')
+
+    @staticmethod
+    def get_link(recipie):
+        relative_url = reverse('recipie details', args=[recipie.id])
+        absolute_url = f'http://127.0.0.1:8000{relative_url}'
+        return absolute_url
+
+    # def get_reviews(self, recipie):
+    #     reviews = Review.objects.filter(recipie_id=recipie.id)
+    #     return reviews
 
 
 class RecipieSerializer(serializers.ModelSerializer):
     total_time = serializers.SerializerMethodField()
-    category = CategorySerializer(many=True, read_only=True)
+    categories = CategorySerializer(many=True, read_only=True)
     photos = serializers.SerializerMethodField()
+    reviews = ReviewSerializer(many=True, read_only=True)
 
     class Meta:
         model = Recipie
