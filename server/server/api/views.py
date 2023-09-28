@@ -3,8 +3,9 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from server.api.serializers import RecipiesSerializer, RecipieSerializer, TestSerializer, TestSerializerOne
-from server.recipies.models import Recipie
+from server.api.serializers import RecipiesSerializer, RecipieSerializer, TestSerializer, TestSerializerOne, \
+    ReviewSerializer, CreateReviewSerializer
+from server.recipies.models import Recipie, Review
 
 
 @api_view(['GET', 'POST'])
@@ -87,6 +88,7 @@ class DetailsRecipieAV(APIView):
 
 class RecipiesApiView(rest_views.ListAPIView, rest_views.CreateAPIView):
     serializer_class = RecipiesSerializer
+    queryset = Recipie.objects.all().order_by("-_created_at")
 
     def get(self, request, *args, **kwargs):
         self.serializer_class = RecipiesSerializer
@@ -99,12 +101,20 @@ class RecipiesApiView(rest_views.ListAPIView, rest_views.CreateAPIView):
             return Response(serializer.data)
         return self.list(request, *args, **kwargs)
 
-    def get_queryset(self):
-        queryset = Recipie.objects.all()
-        return queryset
+
+class RecipieApiView(rest_views.RetrieveAPIView):
+    serializer_class = RecipieSerializer
+    lookup_url_kwarg = 'pk'
+    queryset = Recipie.objects.all()
 
 
-class RecipieApiView(rest_views.RetrieveAPIView, rest_views.UpdateAPIView, rest_views.DestroyAPIView):
+class RecipieApiUpdate(rest_views.UpdateAPIView):
+    serializer_class = RecipieSerializer
+    lookup_url_kwarg = 'pk'
+    queryset = Recipie.objects.all()
+
+
+class RecipieApiDelete(rest_views.DestroyAPIView):
     serializer_class = RecipieSerializer
     lookup_url_kwarg = 'pk'
     queryset = Recipie.objects.all()
@@ -118,3 +128,57 @@ class RecipieCategoryApiView(rest_views.ListAPIView):
         category = self.kwargs.get(self.lookup_url_kwarg).title()
         queryset = Recipie.objects.filter(category__name=category)
         return queryset
+
+
+class RecipieReviewApiView(rest_views.ListAPIView, rest_views.CreateAPIView):
+    serializer_class = ReviewSerializer
+
+    # queryset = Review.objects.filter(recipie_id=lookup_url_kwarg)
+
+    # def get(self, request, *args, **kwargs):
+    #     self.serializer_class = ReviewSerializer
+    #     return self.list(request, *args, **kwargs)
+
+    # def post(self, request, *args, **kwargs):
+    #     recipie_id = self.kwargs.get('pk')
+    #     # print({**request.data, })
+    #     serializer = ReviewSerializer(data=request.data)
+    #     # serializer.save(recipe_id=recipie_id)
+    #     if serializer.is_valid():
+    #         serializer.save()
+    #         return Response(serializer.data)
+    #     return self.list(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        recipie_id = self.kwargs.get('pk')
+        recipie = Recipie.objects.filter(recipie_id=recipie_id).get()
+        serializer.save(recipie=recipie)
+
+    def get_queryset(self):
+        recipie_id = self.kwargs.get('pk')
+        reviews = Review.objects.filter(recipie_id=recipie_id)
+        return reviews
+
+
+class ReviewsApiView(rest_views.ListAPIView):
+    serializer_class = ReviewSerializer
+    queryset = Review.objects.all().order_by("-created")
+
+
+class ReviewsApiCreate(rest_views.CreateAPIView):
+    queryset = Review.objects.all()
+    serializer_class = CreateReviewSerializer
+
+    def perform_create(self, serializer):
+        find_pk = self.kwargs.get('recipie_pk')
+        serializer.save(recipie_id=find_pk)
+
+
+class ReviewsApiUpdate(rest_views.UpdateAPIView):
+    queryset = Review.objects.all()
+    serializer_class = CreateReviewSerializer
+
+
+class ReviewsApiDelete(rest_views.DestroyAPIView):
+    queryset = Review.objects.all()
+    serializer_class = CreateReviewSerializer

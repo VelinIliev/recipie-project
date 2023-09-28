@@ -18,7 +18,7 @@ class PhotoSerializer(serializers.Serializer):
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ('name',)
+        fields = ['name', ]
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -27,28 +27,30 @@ class ReviewSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class CreateReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = ['rating', 'description', 'recipie_id']
+
+
 class RecipiesSerializer(serializers.ModelSerializer):
-    categories = CategorySerializer(many=True, read_only=True)
+    BASE_URL = 'http://127.0.0.1:8000'
+    category = CategorySerializer(many=True, read_only=True)
     link = serializers.SerializerMethodField()
 
     class Meta:
         model = Recipie
-        fields = ('id', 'title', 'description', 'categories', 'link')
+        fields = ('id', 'title', 'description', 'category', 'link')
 
-    @staticmethod
-    def get_link(recipie):
+    def get_link(self, recipie):
         relative_url = reverse('recipie details', args=[recipie.id])
-        absolute_url = f'http://127.0.0.1:8000{relative_url}'
+        absolute_url = f'{self.BASE_URL}{relative_url}'
         return absolute_url
-
-    # def get_reviews(self, recipie):
-    #     reviews = Review.objects.filter(recipie_id=recipie.id)
-    #     return reviews
 
 
 class RecipieSerializer(serializers.ModelSerializer):
     total_time = serializers.SerializerMethodField()
-    categories = CategorySerializer(many=True, read_only=True)
+    category = CategorySerializer(many=True, read_only=True)
     photos = serializers.SerializerMethodField()
     reviews = ReviewSerializer(many=True, read_only=True)
 
