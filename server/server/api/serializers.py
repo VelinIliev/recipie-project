@@ -1,7 +1,7 @@
 from django.urls import reverse
 from rest_framework import serializers
 
-from server.recipies.models import Recipie, Category, Photo, Review
+from server.recipies.models import Recipie, Category, Photo, Review, Comment
 
 
 def description_validator(value):
@@ -9,50 +9,67 @@ def description_validator(value):
         raise serializers.ValidationError('Description is too short')
 
 
-class PhotoSerializer(serializers.Serializer):
+class PhotoSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
     imageUrl = serializers.CharField()
-    # recipie = serializers.CharField()
+
+    class Meta:
+        model = Photo
+        fields = '__all__'
 
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['name', ]
+        fields = '__all__'
 
 
 class ReviewSerializer(serializers.ModelSerializer):
+    review_user = serializers.StringRelatedField(read_only=True)
+
     class Meta:
         model = Review
         fields = '__all__'
 
 
 class CreateReviewSerializer(serializers.ModelSerializer):
+    review_user = serializers.StringRelatedField(read_only=True)
+
     class Meta:
         model = Review
-        fields = ['rating', 'description', 'recipie_id']
+        fields = ['id', 'rating', 'description', 'recipie_id', 'review_user']
 
 
 class RecipiesSerializer(serializers.ModelSerializer):
     BASE_URL = 'http://127.0.0.1:8000'
     category = CategorySerializer(many=True, read_only=True)
     link = serializers.SerializerMethodField()
+    photo = serializers.SerializerMethodField()
 
     class Meta:
         model = Recipie
-        fields = ('id', 'title', 'description', 'category', 'link')
+        fields = ('id', 'title', 'description', 'category', 'link', 'photo')
 
     def get_link(self, recipie):
         relative_url = reverse('recipie details', args=[recipie.id])
         absolute_url = f'{self.BASE_URL}{relative_url}'
         return absolute_url
 
+    def get_photo(self, object):
+        photos = object.photos.first()
+        if photos:
+            serializer = PhotoSerializer(photos)
+            return serializer.data
+        else:
+            return []
+
 
 class RecipieSerializer(serializers.ModelSerializer):
     total_time = serializers.SerializerMethodField()
     category = CategorySerializer(many=True, read_only=True)
     photos = serializers.SerializerMethodField()
-    reviews = ReviewSerializer(many=True, read_only=True)
+
+    # reviews = ReviewSerializer(many=True, read_only=True)
 
     class Meta:
         model = Recipie
@@ -64,7 +81,8 @@ class RecipieSerializer(serializers.ModelSerializer):
         return total
 
     def get_photos(self, object):
-        photos = object.photo_set.all()
+        # recipie = Recipie.objects.filter(id=15).get()
+        photos = object.photos
         serializer = PhotoSerializer(photos, many=True)
         return serializer.data
 
@@ -126,3 +144,9 @@ class TestSerializerOne(serializers.Serializer):
             raise serializers.ValidationError('Title is too long')
         else:
             return value
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = '__all__'

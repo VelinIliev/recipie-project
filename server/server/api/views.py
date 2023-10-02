@@ -1,8 +1,11 @@
-from rest_framework import generics as rest_views
+from rest_framework import generics as rest_views, permissions
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
-from server.api.serializers import RecipiesSerializer, RecipieSerializer, ReviewSerializer, CreateReviewSerializer
-from server.recipies.models import Recipie, Review
+from server.api.permissions import AdminOrReadOnly, ReviewUserOrReadOnly
+from server.api.serializers import RecipiesSerializer, RecipieSerializer, ReviewSerializer, CreateReviewSerializer, \
+    CategorySerializer, CommentSerializer
+from server.recipies.models import Recipie, Review, Category, Comment
 
 
 # @api_view(['GET', 'POST'])
@@ -121,18 +124,85 @@ class RecipieReviewApiView(rest_views.ListCreateAPIView):
 class ReviewsApiView(rest_views.ListAPIView):
     serializer_class = ReviewSerializer
     queryset = Review.objects.all().order_by("-created")
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class ReviewsApiCreate(rest_views.CreateAPIView):
-    queryset = Review.objects.all()
+    # queryset = Review.objects.all()
     serializer_class = CreateReviewSerializer
+
+    def get_queryset(self):
+        return Review.objects.all()
 
     def perform_create(self, serializer):
         get_pk = self.kwargs.get('recipie_pk')
         recipie = Recipie.objects.filter(id=get_pk).get()
-        serializer.save(recipie=recipie)
+        review_user = self.request.user
+        review_queryset = Review.objects.filter(recipie=recipie, review_user=review_user)
+
+        if review_queryset.exists():
+            raise ValidationError("You already reviewed this recipie.")
+
+        if recipie.total_reviews == 0:
+            recipie.avg_rating = serializer.validated_data['rating']
+
+        else:
+            recipie.avg_rating = (recipie.avg_rating + serializer.validated_data['rating']) / 2
+
+        recipie.total_reviews = recipie.total_reviews + 1
+        recipie.save()
+
+        serializer.save(recipie=recipie, review_user=review_user)
 
 
 class ReviewsApiRetrieveUpdateDestroy(rest_views.RetrieveUpdateDestroyAPIView):
     queryset = Review.objects.all()
     serializer_class = CreateReviewSerializer
+    permission_classes = [ReviewUserOrReadOnly]
+
+
+class RecipieReviewsApiView(rest_views.ListAPIView):
+    serializer_class = ReviewSerializer
+    queryset = Review.objects.filter(active=True)
+
+    def get_queryset(self):
+        recipie_pk = self.kwargs.get('recipie_pk')
+        return Review.objects.filter(recipie_id=recipie_pk, active=True)
+
+
+class CategoriesApiView(rest_views.ListCreateAPIView):
+    serializer_class = CategorySerializer
+    queryset = Category.objects.all()
+    permission_classes = [AdminOrReadOnly]
+
+
+class CategoriesApiRetrieveUpdateDestroy(rest_views.RetrieveUpdateDestroyAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [AdminOrReadOnly]
+
+
+class CommentsApiCreate(rest_views.CreateAPIView):
+    serializer_class = CommentSerializer
+
+    def get_queryset(self):
+        return Comment.objects.all()
+
+    def perform_create(self, serializer):
+        get_pk = self.kwargs.get('recipie_pk')
+        recipie = Recipie.objects.filter(id=get_pk).get()
+        comment_user = self.request.user
+        serializer.save(recipie=recipie, comment_user=comment_user)
+
+
+class CommentsApiView(rest_views.ListCreateAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+
+
+class CommentsReviewsApiView(rest_views.ListAPIView):
+    serializer_class = CommentSerializer
+
+    def get_queryset(self):
+        recipie_pk = self.kwargs.get('recipie_pk')
+        return Comment.objects.filter(recipie_id=recipie_pk)
