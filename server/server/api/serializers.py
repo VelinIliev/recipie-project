@@ -1,7 +1,11 @@
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import serializers
 
 from server.recipies.models import Recipie, Category, Photo, Review, Comment
+from server.user_app.models import ExtendAppUser
+
+UserModel = get_user_model()
 
 
 def description_validator(value):
@@ -25,8 +29,6 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    review_user = serializers.StringRelatedField(read_only=True)
-
     class Meta:
         model = Review
         fields = '__all__'
@@ -48,7 +50,7 @@ class RecipiesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Recipie
-        fields = ('id', 'title', 'description', 'category', 'link', 'photo')
+        fields = ('id', 'title', 'description', 'category', 'link', 'photo', 'user')
 
     def get_link(self, recipie):
         relative_url = reverse('recipie details', args=[recipie.id])
@@ -68,8 +70,6 @@ class RecipieSerializer(serializers.ModelSerializer):
     total_time = serializers.SerializerMethodField()
     category = CategorySerializer(many=True, read_only=True)
     photos = serializers.SerializerMethodField()
-
-    # reviews = ReviewSerializer(many=True, read_only=True)
 
     class Meta:
         model = Recipie
@@ -147,6 +147,34 @@ class TestSerializerOne(serializers.Serializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    comment_user = serializers.StringRelatedField()
+
     class Meta:
         model = Comment
+        fields = ['id', 'text', 'recipie', 'comment_user']
+
+
+class UserSerializer(serializers.ModelSerializer):
+    gender = serializers.SerializerMethodField()
+    photo = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserModel
+        fields = ['id', 'username', 'gender', 'photo']
+
+    def get_gender(self, object):
+        extra_user = ExtendAppUser.objects.filter(user_id=object).get()
+        return extra_user.gender
+
+    def get_photo(self, object):
+        extra_user = ExtendAppUser.objects.filter(user_id=object).get()
+        if extra_user.imageUrl:
+            return str(extra_user.imageUrl)
+        else:
+            return None
+
+
+class EditExtendAppUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ExtendAppUser
         fields = '__all__'

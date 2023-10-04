@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from rest_framework import permissions
 
 
@@ -17,3 +18,16 @@ class ReviewUserOrReadOnly(permissions.BasePermission):
             return True
         else:
             return obj.review_user == request.user
+
+
+# class CreateOrReadOnly(permissions.BasePermission):
+#
+#     def has_permission(self, request, view):
+#         if request.method in permissions.SAFE_METHODS:
+#             return True
+#         else:
+#             x = User.objects.filter(username=request.user).get()
+#             if x:
+#                 return True
+#             else:
+#                 return False
