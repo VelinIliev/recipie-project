@@ -1,5 +1,7 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
+
+UserModel = get_user_model()
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -9,7 +11,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = User
+        model = UserModel
         fields = ['username', 'email', 'password', 'password2']
         extra_kwargs = {
             'password': {'write_only': True}
@@ -22,10 +24,10 @@ class RegistrationSerializer(serializers.ModelSerializer):
         if password != password2:
             raise serializers.ValidationError({'error': 'Passwords are not the same.'})
 
-        if User.objects.filter(email=self.validated_data['email']).exists():
+        if UserModel.objects.filter(email=self.validated_data['email']).exists():
             raise serializers.ValidationError({"error": "This email is already in use"})
 
-        account = User(
+        account = UserModel(
             email=self.validated_data['email'],
             username=self.validated_data['username']
         )
