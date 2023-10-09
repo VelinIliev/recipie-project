@@ -6,8 +6,6 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from server.api.permissions import AdminOrReadOnly, ReviewUserOrReadOnly
-from server.api.serializers import RecipiesSerializer, RecipieSerializer, ReviewSerializer, CreateReviewSerializer, \
-    CategorySerializer, CommentSerializer, PhotoSerializer, UserSerializer, EditExtendAppUserSerializer
 from server.recipies.models import Recipie, Review, Category, Comment, Photo
 from server.user_app.models import ExtendAppUser
 

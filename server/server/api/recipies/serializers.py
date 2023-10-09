@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from server.api.categories.serializers import CategorySerializer
 from server.api.photos.serializers import PhotoSerializer
-from server.recipies.models import Recipie
+from server.recipies.models import Recipie, Photo
 
 UserModel = get_user_model()
 
@@ -14,10 +14,12 @@ class RecipiesSerializer(serializers.ModelSerializer):
     category = CategorySerializer(many=True, read_only=True)
     link = serializers.SerializerMethodField()
     photo = serializers.SerializerMethodField()
+    number_of_photos = serializers.SerializerMethodField()
 
     class Meta:
         model = Recipie
-        fields = ('id', 'title', 'description', 'category', 'link', 'photo', 'user')
+        fields = ('id', 'title', 'description', 'category', 'link', 'photo', 'user', 'avg_rating', 'cooking_time',
+                  'number_of_photos')
 
     def get_link(self, recipie):
         relative_url = reverse('recipie details', args=[recipie.id])
@@ -30,7 +32,15 @@ class RecipiesSerializer(serializers.ModelSerializer):
             serializer = PhotoSerializer(photos)
             return serializer.data
         else:
-            return []
+            return None
+
+    def get_number_of_photos(self, object):
+        photos = object.photos
+        if photos:
+            serializer = PhotoSerializer(photos, many=True)
+            return len(serializer.data)
+        else:
+            return 0
 
 
 class RecipieSerializer(serializers.ModelSerializer):

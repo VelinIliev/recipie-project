@@ -4,7 +4,7 @@ from rest_framework.response import Response
 
 from server.api.recipies.serializers import RecipiesSerializer
 from server.api.users.serializer import UserSerializer, EditExtendAppUserSerializer
-from server.recipies.models import Recipie
+from server.recipies.models import Recipie, Review
 from server.user_app.models import ExtendAppUser
 
 UserModel = get_user_model()
@@ -21,8 +21,14 @@ class UserRecipiesApiView(rest_views.ListAPIView):
 
 
 class UsersApiView(rest_views.ListAPIView):
-    queryset = UserModel.objects.all()
     serializer_class = UserSerializer
+
+    def get_queryset(self):
+        username = self.request.query_params.get('username', None)
+        if username:
+            return UserModel.objects.filter(username__contains=username)
+        else:
+            return UserModel.objects.all()
 
 
 class UserEditApiView(rest_views.UpdateAPIView):

@@ -5,20 +5,40 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from server.api.comments.serializers import CommentSerializer
+from server.api.pagination import RecipiesPagination
 from server.api.photos.serializers import PhotoSerializer
 from server.api.recipies.serializers import RecipiesSerializer, RecipieSerializer
 from server.api.reviews.serializers import ReviewSerializer, CreateReviewSerializer
-from server.recipies.models import Recipie, Review, Comment, Photo
+from server.recipies.models import Recipie, Review, Comment, Photo, Category
 
 UserModel = get_user_model()
 
 
 class RecipiesApiView(rest_views.ListCreateAPIView):
     serializer_class = RecipiesSerializer
-    queryset = Recipie.objects.all().order_by("-_created_at")
+    # queryset = Recipie.objects.all().order_by("-_created_at")
+    pagination_class = RecipiesPagination
 
     # throttle_classes = [UserRateThrottle, AnonRateThrottle]
     # permission_classes = [CreateOrReadOnly]
+
+    def get_queryset(self):
+        title = self.request.query_params.get('title', None)
+        category = self.request.query_params.get('category', None)
+        order = self.request.query_params.get('order', None)
+        queryset = Recipie.objects.all().order_by('-_created_at')
+
+        if order:
+            order = order.split(',')
+            queryset = queryset.order_by(*[x for x in order])
+
+        if title:
+            queryset = queryset.filter(title__icontains=title)
+
+        if category:
+            queryset = queryset.filter(category__name__iexact=category)
+
+        return queryset
 
     def post(self, request, *args, **kwargs):
         user = self.request.user
@@ -116,3 +136,25 @@ class PhotoUploadApi(rest_views.ListAPIView):
         file = request.data['file']
         image = Photo.objects.create(imageUrl=file, recipie_id=recipie_pk)
         return Response({'message': "Uploaded"})
+
+
+class RecipieCategoryApiAdd(rest_views.UpdateAPIView):
+    serializer_class = RecipiesSerializer
+    queryset = Recipie.objects.all()
+
+    def patch(self, request, *args, **kwargs):
+        get_pk = self.kwargs.get('recipie_pk')
+        category_pk = self.kwargs.get('category_pk')
+
+        try:
+            recipie = Recipie.objects.filter(id=get_pk).get()
+        except Recipie.DoesNotExist:
+            raise ValidationError("No recipie found")
+
+        try:
+            category = Category.objects.filter(id=category_pk).get()
+        except Category.DoesNotExist:
+            raise ValidationError("No category found")
+
+        recipie.category.add(category)
+        return Response(status=201)

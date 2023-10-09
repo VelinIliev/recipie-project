@@ -6,6 +6,8 @@ from server.api.permissions import ReviewUserOrReadOnly
 from server.api.reviews.serializers import ReviewSerializer, CreateReviewSerializer
 from server.recipies.models import Review
 
+from django_filters.rest_framework import DjangoFilterBackend
+
 UserModel = get_user_model()
 
 
@@ -13,6 +15,8 @@ class ReviewsApiView(rest_views.ListAPIView):
     serializer_class = ReviewSerializer
     queryset = Review.objects.all().order_by("-created")
     permission_classes = [permissions.IsAuthenticated]
+    # filter_backends = [DjangoFilterBackend]
+    # filterset_fields = ['review_user__username', 'rating']
 
 
 class ReviewsApiRetrieveUpdateDestroy(rest_views.RetrieveUpdateDestroyAPIView):
